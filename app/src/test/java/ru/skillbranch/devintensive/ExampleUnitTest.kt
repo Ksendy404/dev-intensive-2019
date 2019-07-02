@@ -20,7 +20,7 @@ class ExampleUnitTest {
     @Test
     fun test_instance() {
         val user = User("1")
-        val user2 = User("2", "John", "Cena")
+        //val user2 = User("2", "John", "Cena")
         println("$user")
     }
 }
