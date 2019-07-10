@@ -6,4 +6,9 @@ fun String.truncate(limit: Int = 16): String {
     val substr = trimmedString.substring(0 until limit).trim()
     return "$substr..."
 }
-fun String.stripHtml(): String = this.replace(Regex("(<(.|\\n)+?>)|(\\s\\s)+"), "")
+fun String.stripHtml(): String {
+    return this
+            .replace("""<.*?>""".toRegex(), "")
+            .replace("""&(#\d+?|\w+?);""".toRegex(), "")
+            .split(""" +""".toRegex()).joinToString(" ")
+}
