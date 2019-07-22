@@ -1,30 +1,30 @@
 package ru.skillbranch.devintensive.utils
 
 object Utils {
+    fun parseFullName(fullName: String?): Pair<String?, String?> {
+        val parts: List<String>? = fullName?.split(" ")
 
-    fun parseFullName(fullName: String?): Pair<String?, String?> = when {
-        fullName == null -> null to null
-        fullName.trim().isEmpty() -> null to null
-        else -> fullName.trim().replace(Regex(" +"), " ").split(" ").let {
-            it.firstOrNull() to it.getOrNull(1)
+        return if (fullName.isNullOrEmpty() || fullName == " ") {
+            val firsName = null
+            val lastName = null
+            firsName to lastName
+        } else {
+            val firsName = parts?.getOrNull(0)
+            val lastName = parts?.getOrNull(1)
+            firsName to lastName
         }
-    }
 
-    fun toInitials(firstName: String?, lastName: String?): String? {
-        var initials: String? = ""
-        for (part: String? in arrayOf(firstName, lastName)) {
-            initials += when {
-                part == null -> ""
-                part.trim() == "" -> ""
-                else -> part.substring(0, 1).toUpperCase()
-            }
-        }
-        initials = if (initials == "") null else initials
-        return initials
+//        val parts: List<String>? = fullName?.split(" ")
+
+//        val firsName = parts?.getOrNull(0)
+//        val lastName = parts?.getOrNull(1)
+//        return Pair(firsName, lastName)
+//        return firsName to lastName
     }
 
     fun transliteration(payload: String, divider: String = " "): String {
-        val translitData = hashMapOf(
+        var result = ""
+        val translationMap: Map<String, String> = hashMapOf(
             "а" to "a",
             "б" to "b",
             "в" to "v",
@@ -57,31 +57,75 @@ object Utils {
             "ь" to "",
             "э" to "e",
             "ю" to "yu",
-            "я" to "ya"
+            "я" to "ya",
+            "А" to "A",
+            "Б" to "B",
+            "В" to "V",
+            "Г" to "G",
+            "Д" to "D",
+            "Е" to "E",
+            "Ё" to "E",
+            "Ж" to "Zh",
+            "З" to "Z",
+            "И" to "I",
+            "Й" to "I",
+            "К" to "K",
+            "Л" to "L",
+            "М" to "M",
+            "Н" to "N",
+            "О" to "O",
+            "П" to "P",
+            "Р" to "R",
+            "С" to "S",
+            "Т" to "T",
+            "У" to "U",
+            "Ф" to "F",
+            "Х" to "H",
+            "Ц" to "C",
+            "Ч" to "Ch",
+            "Ш" to "Sh",
+            "Щ" to "Sh'",
+            "Ъ" to "",
+            "Ы" to "I",
+            "Ь" to "",
+            "Э" to "E",
+            "Ю" to "Yu",
+            "Я" to "Ya"
         )
-        val parts: List<String> = payload.split(" ")
-        var newParts: MutableList<String> = arrayListOf()
-        for (part: String in parts) {
-            var newPart: String = "";
-            part.forEach {
-                val nextSymbol: String = translitData[it.toString().toLowerCase()] ?: it.toString()
-                newPart += if (it.isUpperCase()) nextSymbol.substring(0, 1).toUpperCase() else nextSymbol.substring(
-                    0,
-                    1
-                ).toLowerCase()
-                newPart += if (nextSymbol.length > 1) nextSymbol.substring(1) else ""
+
+        for (i in payload) {
+            when {
+                translationMap.containsKey(i.toString()) -> result += translationMap[i.toString()]
+                i.toString() == " " -> result += divider
+                else -> result += i
             }
-            newParts.add(newPart)
         }
-        return newParts.joinToString(divider)
+        return result
+    }
+
+    fun toInitials(firstName: String?, lastName: String?): String? {
+        val firstInitial: String? =
+            (if (firstName.isNullOrBlank()) {
+                null
+            } else {
+                firstName[0].toString().toUpperCase()
+            })
+
+        val lastInitial: String? =
+            (if (lastName.isNullOrBlank()) {
+                null
+            } else {
+                lastName[0].toString().toUpperCase()
+            })
+
+        return when {
+            firstInitial.isNullOrBlank() -> {
+                lastInitial
+            }
+            lastInitial.isNullOrBlank() -> {
+                firstInitial
+            }
+            else -> firstInitial.plus(lastInitial)
+        }
     }
 }
-
-inline fun <T, Z, R> with(receiver: T, receiver2: Z, block: (T, Z) -> R): R = block(receiver, receiver2)
-
-inline fun <reified T : Enum<T>> T.next(): T {
-    val values = enumValues<T>()
-    val nextOrdinal = (ordinal + 1) % values.size
-    return values[nextOrdinal]
-}
-
