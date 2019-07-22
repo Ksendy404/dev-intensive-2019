@@ -1,131 +1,49 @@
 package ru.skillbranch.devintensive.utils
 
 object Utils {
-    fun parseFullName(fullName: String?): Pair<String?, String?> {
-        val parts: List<String>? = fullName?.split(" ")
 
-        return if (fullName.isNullOrEmpty() || fullName == " ") {
-            val firsName = null
-            val lastName = null
-            firsName to lastName
-        } else {
-            val firsName = parts?.getOrNull(0)
-            val lastName = parts?.getOrNull(1)
-            firsName to lastName
+    fun parseFullName(fullName: String?) = when {
+        fullName.isNullOrBlank() -> null to null
+        else -> with(fullName.replace("\\s+".toRegex(), " ").split(" ")) {
+            getOrNull(0)?.run { if (isBlank()) null else this } to getOrNull(1)?.run { if (isBlank()) null else this }
         }
-
-//        val parts: List<String>? = fullName?.split(" ")
-
-//        val firsName = parts?.getOrNull(0)
-//        val lastName = parts?.getOrNull(1)
-//        return Pair(firsName, lastName)
-//        return firsName to lastName
     }
 
     fun transliteration(payload: String, divider: String = " "): String {
-        var result = ""
-        val translationMap: Map<String, String> = hashMapOf(
-            "а" to "a",
-            "б" to "b",
-            "в" to "v",
-            "г" to "g",
-            "д" to "d",
-            "е" to "e",
-            "ё" to "e",
-            "ж" to "zh",
-            "з" to "z",
-            "и" to "i",
-            "й" to "i",
-            "к" to "k",
-            "л" to "l",
-            "м" to "m",
-            "н" to "n",
-            "о" to "o",
-            "п" to "p",
-            "р" to "r",
-            "с" to "s",
-            "т" to "t",
-            "у" to "u",
-            "ф" to "f",
-            "х" to "h",
-            "ц" to "c",
-            "ч" to "ch",
-            "ш" to "sh",
-            "щ" to "sh'",
-            "ъ" to "",
-            "ы" to "i",
-            "ь" to "",
-            "э" to "e",
-            "ю" to "yu",
-            "я" to "ya",
-            "А" to "A",
-            "Б" to "B",
-            "В" to "V",
-            "Г" to "G",
-            "Д" to "D",
-            "Е" to "E",
-            "Ё" to "E",
-            "Ж" to "Zh",
-            "З" to "Z",
-            "И" to "I",
-            "Й" to "I",
-            "К" to "K",
-            "Л" to "L",
-            "М" to "M",
-            "Н" to "N",
-            "О" to "O",
-            "П" to "P",
-            "Р" to "R",
-            "С" to "S",
-            "Т" to "T",
-            "У" to "U",
-            "Ф" to "F",
-            "Х" to "H",
-            "Ц" to "C",
-            "Ч" to "Ch",
-            "Ш" to "Sh",
-            "Щ" to "Sh'",
-            "Ъ" to "",
-            "Ы" to "I",
-            "Ь" to "",
-            "Э" to "E",
-            "Ю" to "Yu",
-            "Я" to "Ya"
+        val abcCyr = charArrayOf(
+                'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т',
+                'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+                'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т',
+                'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я'
         )
-
-        for (i in payload) {
-            when {
-                translationMap.containsKey(i.toString()) -> result += translationMap[i.toString()]
-                i.toString() == " " -> result += divider
-                else -> result += i
-            }
+        val abcLat = arrayOf(
+                "a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "i", "k", "l", "m", "n", "o", "p", "r", "s", "t",
+                "u", "f", "h", "c", "ch", "sh", "sh'", "", "i", "", "e", "yu", "ya",
+                "A", "B", "V", "G", "D", "E", "E", "Zh", "Z", "I", "I", "K", "L", "M", "N", "O", "P", "R", "S", "T",
+                "U", "F", "H", "C", "Ch", "Sh", "Sh'", "", "I", "", "E", "Yu", "Ya"
+        )
+        val stringBuilder = StringBuilder()
+        for (i in 0 until payload.length) {
+            for (j in abcCyr.indices)
+                if (payload[i] == abcCyr[j]) {
+                    stringBuilder.append(abcLat[j])
+                    break
+                } else if (j == abcCyr.size - 1) stringBuilder.append(payload[i])
         }
-        return result
+        val str = stringBuilder.toString()
+        return if (divider != " ") str.replace(" ", divider) else str
     }
 
-    fun toInitials(firstName: String?, lastName: String?): String? {
-        val firstInitial: String? =
-            (if (firstName.isNullOrBlank()) {
-                null
-            } else {
-                firstName[0].toString().toUpperCase()
-            })
-
-        val lastInitial: String? =
-            (if (lastName.isNullOrBlank()) {
-                null
-            } else {
-                lastName[0].toString().toUpperCase()
-            })
-
-        return when {
-            firstInitial.isNullOrBlank() -> {
-                lastInitial
-            }
-            lastInitial.isNullOrBlank() -> {
-                firstInitial
-            }
-            else -> firstInitial.plus(lastInitial)
-        }
+    fun toInitials(firstName: String?, lastName: String?) = when {
+        firstName.isNullOrBlank() && lastName.isNullOrBlank() -> null
+        else -> "${firstName?.trim()?.take(1) ?: ""}${lastName?.trim()?.take(1) ?: ""}".toUpperCase()
     }
+}
+
+inline fun <T, Z, R> with(receiver: T, receiver2: Z, block: (T, Z) -> R): R = block(receiver, receiver2)
+
+inline fun <reified T : Enum<T>> T.next(): T {
+    val values = enumValues<T>()
+    val nextOrdinal = (ordinal + 1) % values.size
+    return values[nextOrdinal]
 }

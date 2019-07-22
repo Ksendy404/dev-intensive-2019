@@ -1,146 +1,65 @@
 package ru.skillbranch.devintensive.extensions
 
+import android.util.Log
+import ru.skillbranch.devintensive.utils.with
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
-const val SECOND = 1000L
-const val MINUTE = 60 * SECOND
-const val HOUR = 60 * MINUTE
-const val DAY = 24 * HOUR
 
-fun Date.format(pattern: String = "HH:mm:ss dd.MM.yy"): String {
-    val dateFormat = SimpleDateFormat(pattern, Locale("ru"))
-    return dateFormat.format(this)
+enum class TimeUnits(val durationInMs: Long, val one: String, val few: String, val many: String) {
+    SECOND(1000L, "секунду", "секунды", "секунд"),
+    MINUTE(60000L, "минуту", "минуты", "минут"),
+    HOUR(3600000L, "час", "часа", "часов"),
+    DAY(86400000L, "день", "дня", "дней");
 }
 
-fun Date.add(value: Int, units: TimeUnits = TimeUnits.SECOND): Date {
-    var time = this.time
-
-    time += when (units) {
-        TimeUnits.SECOND -> value * SECOND
-        TimeUnits.MINUTE -> value * MINUTE
-        TimeUnits.HOUR -> value * HOUR
-        TimeUnits.DAY -> value * DAY
-    }
-    this.time = time
-    return this
-}
-
-fun Date.humanizeDiff(date: Date = Date()): String {
-    val currentDate = date.time
-    val unixDate = this.time
-    val exactTime = abs(currentDate - unixDate)
-    val result: String
-
-
+fun TimeUnits.plural(value: Int): String = with(value % 100 / 10, value % 10) { tens, ones ->
     when {
-        currentDate > unixDate + 1 * SECOND && currentDate < unixDate + 45 * SECOND ->
-            result = "несколько секунд назад"
-        currentDate < unixDate - 1 * SECOND && currentDate > unixDate - 45 * SECOND ->
-            result = "через несколько секунд"
-
-        currentDate > unixDate + 45 * SECOND && currentDate < unixDate + 75 * SECOND ->
-            result = "минуту назад"
-        currentDate < unixDate - 45 * SECOND && currentDate > unixDate - 75 * SECOND ->
-            result = "через минуту"
-
-        currentDate > unixDate + 75 * SECOND && currentDate < unixDate + 45 * MINUTE ->
-            result = "${TimeUnits.MINUTE.plural((exactTime / MINUTE).toInt())} назад"
-        currentDate < unixDate - 75 * SECOND && currentDate > unixDate - 45 * MINUTE ->
-            result = "через ${TimeUnits.MINUTE.plural((exactTime / MINUTE).toInt())}"
-
-        currentDate > unixDate + 45 * MINUTE && currentDate < unixDate + 75 * MINUTE ->
-            result = "час назад"
-        currentDate < unixDate - 45 * MINUTE && currentDate > unixDate - 75 * MINUTE ->
-            result = "через час"
-
-        currentDate > unixDate + 75 * MINUTE && currentDate < unixDate + 22 * HOUR ->
-            result = "${TimeUnits.HOUR.plural((exactTime / HOUR).toInt())} назад"
-        currentDate < unixDate - 75 * MINUTE && currentDate > unixDate - 22 * HOUR ->
-            result = "через ${TimeUnits.HOUR.plural((exactTime / HOUR).toInt())}"
-
-        currentDate > unixDate + 22 * HOUR && currentDate < unixDate + 26 * HOUR ->
-            result = "день назад"
-        currentDate < unixDate - 22 * HOUR && currentDate > unixDate - 26 * HOUR ->
-            result = "через день"
-
-        currentDate > unixDate + 26 * HOUR && currentDate < unixDate + 360 * DAY ->
-            result = "${TimeUnits.DAY.plural((exactTime / DAY).toInt())} назад"
-        currentDate < unixDate - 26 * HOUR && currentDate > unixDate - 360 * DAY ->
-            result = "через ${TimeUnits.DAY.plural((exactTime / DAY).toInt())}"
-
-        currentDate > unixDate + 360 * DAY ->
-            result = "более года назад"
-        currentDate < unixDate - 360 * DAY ->
-            result = "более чем через год"
-
-        else -> result = "только что"
+        tens == 1 || ones == 0 || ones >= 5 -> "$value $many"
+        ones == 1 -> "$value $one"
+        else -> "$value $few"
     }
-    return result
 }
 
-enum class TimeUnits {
-    SECOND {
-        override fun plural(value: Int): String {
-            val valueString: String = value.toString()
-            return if (value in 5..20) {
-                "$value секунд"
-            } else {
-                when {
-                    valueString.takeLast(1) == "1" -> "$value секунду"
-                    valueString.takeLast(1) > "1" && valueString.takeLast(1) < "5" -> "$value секунды"
-                    else -> "$value секунд"
-                }
-            }
-        }
-    },
-
-    MINUTE {
-        override fun plural(value: Int): String {
-            val valueString: String = value.toString()
-            return if (value in 5..20) {
-                "$value минут"
-            } else {
-                when {
-                    valueString.takeLast(1) == "1" -> "$value минуту"
-                    valueString.takeLast(1) > "1" && valueString.takeLast(1) < "5" -> "$value минуты"
-                    else -> "$value минут"
-                }
-            }
-        }
-    },
-
-    HOUR {
-        override fun plural(value: Int): String {
-            val valueString: String = value.toString()
-            return if (value in 5..20) {
-                "$value часов"
-            } else {
-                when {
-                    valueString.takeLast(1) == "1" -> "$value час"
-                    valueString.takeLast(1) > "1" && valueString.takeLast(1) < "5" -> "$value часа"
-                    else -> "$value часов"
-                }
-            }
-        }
-    },
-
-    DAY {
-        override fun plural(value: Int): String {
-            val valueString: String = value.toString()
-            return if (value in 5..20) {
-                "$value дней"
-            } else {
-                when {
-                    valueString.takeLast(1) == "1" -> "$value день"
-                    valueString.takeLast(1) > "1" && valueString.takeLast(1) < "5" -> "$value дня"
-                    else -> "$value дней"
-                }
-            }
-        }
-    };
-
-    abstract fun plural(value: Int): String
+fun String.toDate(pattern: String = "HH:mm:ss dd.MM.yy"): Date? = try {
+    SimpleDateFormat(pattern, Locale("ru", "RU")).parse(this)
+} catch (e: ParseException) {
+    Log.e("DEV", "${javaClass.simpleName} toDate: $e")
+    null
 }
 
+fun Date.format(pattern: String = "HH:mm:ss dd.MM.yy"): String = SimpleDateFormat(pattern, Locale("ru")).format(this)
+
+fun Date.add(value: Int, timeUnit: TimeUnits = TimeUnits.SECOND) = apply { time += value * timeUnit.durationInMs }
+
+fun Date.humanizeDiff(otherDate: Date = Date()): String {
+    val isPast = time < otherDate.time
+    val diff = abs(time - otherDate.time)
+    val diffDays = (diff / TimeUnits.DAY.durationInMs).toInt()
+    val diffHours = (diff / TimeUnits.HOUR.durationInMs).toInt()
+    val diffMinutes = (diff / TimeUnits.MINUTE.durationInMs).toInt()
+    val diffSeconds = (diff / TimeUnits.SECOND.durationInMs).toInt()
+    return if (isPast) when {
+        diffDays > 360 -> "более года назад"
+        diffHours > 26 -> "${TimeUnits.DAY.plural(diffDays)} назад"
+        diffHours in 23..26 -> "день назад"
+        diffHours <= 22 && diffMinutes > 75 -> "${TimeUnits.HOUR.plural(diffHours)} назад"
+        diffMinutes in 46..75 -> "час назад"
+        diffMinutes <= 45 && diffSeconds > 75 -> "${TimeUnits.MINUTE.plural(diffMinutes)} назад"
+        diffSeconds in 46..75 -> "минуту назад"
+        diffSeconds in 2..45 -> "несколько секунд назад"
+        else -> "только что"
+    } else when {
+        diffDays > 360 -> "более чем через год"
+        diffHours > 26 -> "через ${TimeUnits.DAY.plural(diffDays)}"
+        diffHours in 23..26 -> "через день"
+        diffHours <= 22 && diffMinutes > 75 -> "через ${TimeUnits.HOUR.plural(diffHours)}"
+        diffMinutes in 46..75 -> "через час"
+        diffMinutes <= 45 && diffSeconds > 75 -> "через ${TimeUnits.MINUTE.plural(diffMinutes)}"
+        diffSeconds in 46..75 -> "через минуту"
+        diffSeconds in 2..45 -> "через несколько секунд"
+        else -> "только что"
+    }
+}
