@@ -77,3 +77,11 @@ object Utils {
     }
 }
 
+inline fun <T, Z, R> with(receiver: T, receiver2: Z, block: (T, Z) -> R): R = block(receiver, receiver2)
+
+inline fun <reified T : Enum<T>> T.next(): T {
+    val values = enumValues<T>()
+    val nextOrdinal = (ordinal + 1) % values.size
+    return values[nextOrdinal]
+}
+

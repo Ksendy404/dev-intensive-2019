@@ -1,77 +1,74 @@
 package ru.skillbranch.devintensive.models
 
-class Bender(var status: Status = Status.NORMAL, var question: Question = Question.NAME) {
-    fun askQuestion(): String = when (question) {
-        Question.NAME -> Question.NAME.question
-        Question.PROFESSION -> Question.PROFESSION.question
-        Question.MATERIAL -> Question.MATERIAL.question
-        Question.BDAY -> Question.BDAY.question
-        Question.SERIAL -> Question.SERIAL.question
-        Question.IDLE -> Question.IDLE.question
+import ru.skillbranch.devintensive.models.Bender.Question.NAME
+import ru.skillbranch.devintensive.models.Bender.Status.NORMAL
+import ru.skillbranch.devintensive.utils.next
+
+class Bender(var currentStatus: Status = NORMAL,
+             var currentQuestion: Question = NAME) {
+
+    fun askQuestion() = currentQuestion.text
+
+    fun listenAnswer(answer: String): Pair<String, Color> = with(currentQuestion) {
+        when {
+            this == Question.IDLE -> text
+            !isValid(answer) -> "$validationErrorMessage\n$text"
+            isCorrectAnswer(answer) -> "Отлично - ты справился\n${run { ++currentQuestion }.text}"
+            ++currentStatus != NORMAL -> "Это неправильный ответ\n$text"
+            else -> resetQuestion().let { "Это неправильный ответ. Давай все по новой\n${it.text}" }
+        } to currentStatus.color
     }
 
-    fun listenAnswer(answer: String): Pair<String, Triple<Int, Int, Int>> {
-        return if (question.answers.contains(answer)) {
-            question = question.nextQuestion()
-            "Отлично - ты справился\n${question.question}" to status.color
-        } else {
-            if (status == Status.CRITICAL) {
-                restartStates()
-                "Это неправильный ответ. Давай все по новой\n${question.question}" to status.color
-            } else {
-                status = status.nextStatus()
-                "Это неправильный ответ\n${question.question}" to status.color
-            }
+    private fun resetQuestion(): Question {
+        currentQuestion = NAME
+        return currentQuestion
+    }
+
+    class Color(val r: Int, val g: Int, val b: Int) {
+        companion object {
+            val WHITE = Color(255, 255, 255)
+            val ORANGE = Color(255, 120, 0)
+            val RED = Color(255, 0, 60)
+            val RED_BRIGHT = Color(255, 0, 0)
         }
     }
 
-    private fun restartStates() {
-        status = Status.NORMAL
-        question = Question.NAME
+    enum class Status(val color: Color) {
+        NORMAL(Color.WHITE),
+        WARNING(Color.ORANGE),
+        DANGER(Color.RED),
+        CRITICAL(Color.RED_BRIGHT);
+
+        operator fun inc() = next()
     }
 
-    enum class Status(val color: Triple<Int, Int, Int>) {
-        NORMAL(Triple(255, 255, 255)),
-        WARNING(Triple(255, 120, 0)),
-        DANGER(Triple(255, 60, 60)),
-        CRITICAL(Triple(255, 0, 0));
+    enum class Question(val text: String, private val possibleAnswers: List<String>, val isValid: (String) -> Boolean, val validationErrorMessage: String) {
+        NAME("Как меня зовут?", listOf("бендер", "bender"),
+            { it.isNotEmpty() && it[0].isUpperCase() }, "Имя должно начинаться с заглавной буквы"),
 
-        fun nextStatus(): Status {
-            return if (this.ordinal < values().lastIndex) {
-                values()[this.ordinal + 1]
-            } else {
-                values()[0]
-            }
+        PROFESSION("Назови мою профессию?", listOf("сгибальщик", "bender"),
+            { it.isNotEmpty() && it[0].isLowerCase() }, "Профессия должна начинаться со строчной буквы"),
+
+        MATERIAL("Из чего я сделан?", listOf("металл", "дерево", "metal", "iron", "wood"),
+            { it.isNotEmpty() && !it.contains(Regex("\\d")) }, "Материал не должен содержать цифр"),
+
+        BDAY("Когда меня создали?", listOf("2993"),
+            { Regex("\\d+").matches(it) }, "Год моего рождения должен содержать только цифры"),
+
+        SERIAL("Мой серийный номер?", listOf("2716057"),
+            { Regex("\\d{7}").matches(it) }, "Серийный номер содержит только цифры, и их 7"),
+
+        IDLE("На этом все, вопросов больше нет", listOf(), { true }, "");
+
+        fun isCorrectAnswer(answer: String) = possibleAnswers.contains(answer.toLowerCase())
+
+        operator fun inc(): Question = with((ordinal + 1) % values().size) {
+            if (this == 0) IDLE else values()[this]
         }
     }
 
-    enum class Question(val question: String, val answers: List<String>) {
-        NAME("Как меня зовут?", listOf("бендер", "bender")) {
-            override fun nextQuestion(): Question = PROFESSION
-            override fun validate(answer: String): Boolean = answer.trim().firstOrNull()?.isUpperCase() ?: false
-        },
-        PROFESSION("Назови мою профессию?", listOf("сгибальщик", "bender")) {
-            override fun nextQuestion(): Question = MATERIAL
-            override fun validate(answer: String): Boolean = answer.trim().firstOrNull()?.isLowerCase() ?: false
-        },
-        MATERIAL("Из чего я сделан?", listOf("металл", "дерево", "metal", "iron", "wood")) {
-            override fun nextQuestion(): Question = BDAY
-            override fun validate(answer: String): Boolean = answer.trim().contains(Regex("\\d")).not()
-        },
-        BDAY("Когда меня создали?", listOf("2993")) {
-            override fun nextQuestion(): Question = SERIAL
-            override fun validate(answer: String): Boolean = answer.trim().contains(Regex("^[0-9]*$"))
-        },
-        SERIAL("Мой серийный номер?", listOf("2716057")) {
-            override fun nextQuestion(): Question = IDLE
-            override fun validate(answer: String): Boolean = answer.trim().contains(Regex("^[0-9]{7}$"))
-        },
-        IDLE("На этом все, вопросов больше нет", listOf()) {
-            override fun nextQuestion(): Question = IDLE
-            override fun validate(answer: String): Boolean = true
-        };
-
-        abstract fun nextQuestion(): Question
-        abstract fun validate(answer: String): Boolean
+    companion object {
+        const val KEY_QUESTION = "KEY_QUESTION"
+        const val KEY_STATUS = "KEY_STATUS"
     }
 }
